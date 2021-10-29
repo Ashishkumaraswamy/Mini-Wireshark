@@ -84,15 +84,27 @@ def snip_page(current_filter=None,iface=None):
         print("\t\t\tPACKETS\n")
         print("S.No\t\tSource\t\t     Destination\t Type\tLength\n")
         for i in range(len(pkts)):
-            print(i+1,"\t",pkts[i][IP].src,"\t",pkts[i][IP].dst,"\t",type(pkts[i]),"\t",len(pkts[i]))
+            tl=top_layer(pkts[i]).upper()
+            if tl!='ARP':
+                print(i+1,"\t",pkts[i][IP].src,"\t\t",pkts[i][IP].dst,"\t\t",tl,"\t\t",len(pkts[i]))
+            else:
+                print(i+1,"\t",pkts[i].src,"\t\t",pkts[i].dst,"\t\t",tl,"\t\t",len(pkts[i]))
         options(pkts,iface)
-        
+
 def sniff_packets(iface,filter):
     pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
     if(len(pkts)==0):
         print("\n\n\tNo packets captured !!")
+        time.sleep(3)
+        snip_page(None,iface)
     return pkts
 
+def top_layer(packet):
+    while packet.payload and packet.payload.name!='Raw':
+        packet=packet.payload
+        layer=packet.name
+    return layer
+    
 def examine(pkts):
     display_title()
     print("\n\n")
