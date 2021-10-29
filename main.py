@@ -84,7 +84,6 @@ def snip_page(current_filter=None,iface=None):
         print("\t\t\tPACKETS\n")
         print("S.No\t\tSource\t\t     Destination\t Type\tLength\n")
         for i in range(len(pkts)):
-            a=pkts[i].packets
             print(i+1,"\t",pkts[i][IP].src,"\t",pkts[i][IP].dst,"\t",type(pkts[i]),"\t",len(pkts[i]))
         options(pkts,iface)
         
@@ -103,10 +102,21 @@ def examine(pkts):
     system("cls")
     display_title()
     print("\n\n")
-    print(pkts[n-1].show2())
-    # for i in pkts[n-1].layers():
-    #     print(i)
-    #     print(i,", ",pkts[n-1][i].src,", ",pkts[n-1][i].dst)
+    # print(pkts[n-1].show2())
+    for i in range(0,4):
+        if i==0:
+            print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)" )
+        if i==1:
+            print("Ethernet Layer 2, Src:",pkts[n-1].src," Dst:",pkts[n-1].dst)
+        if i==2:
+            print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
+        if i==3:
+            if pkts[n-1].haslayer(TCP):
+                print("Transmission Control Protocol, Src Port:",pkts[n-1][TCP].sport," Dst Port:",pkts[n-1][TCP].dport)
+            elif pkts[n-1].haslayer(UDP):
+                print("User Datagram Protocol, Src Port:",pkts[n-1][UDP].sport," Dst Port:",pkts[n-1][UDP].dport)
+    print("\n\n")
+    print(hexdump(pkts[n-1]))
     print("\n\n")
     options(pkts)
 
