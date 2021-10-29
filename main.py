@@ -86,7 +86,7 @@ def snip_page(current_filter=None,iface=None):
 
 def print_packets(pkts):
     print("\t\t\tPACKETS\n")
-    print("S.No\t   Source\t\t  Destination\t\t Type\tLength\tInfo\n")
+    print("S.No\t   Source\t\t  Destination\t\t Type\t   Length\t    Info\n")
     s=20
     for i in range(len(pkts)):
         tl=top_layer(pkts[i]).upper()
@@ -103,8 +103,13 @@ def print_packets(pkts):
                     opcode="response"
                 print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\tEcho ",opcode," id=",pkts[i][ICMP].id)
         else:
-            print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl,"\t",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
+            op=pkts[i][ARP].op
+            if op==1:
+                print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
 
+            else:
+                print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\t",pkts[i][ARP].pdst," is at ",pkts[i][ARP].psrc)
+            
 def sniff_packets(iface,filter):
     pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
     if(len(pkts)==0):
@@ -143,7 +148,7 @@ def examine(pkts):
                 print("  >Total Length:  ",pkts[n-1][IP].len)
                 print("  >Identification:",pkts[n-1][IP].id)
                 print("  >TTL:           ",pkts[n-1][IP].ttl)
-                print("  >protocol:      ",pkts[n-1][IP].proto,"\n")
+                print("  >Protocol:      ",pkts[n-1][IP].proto,"\n")
             if pkts[n-1].haslayer(ARP):
                 op=pkts[n-1][ARP].op
                 if op==1:
@@ -188,7 +193,7 @@ def save(pkts):
     name=str(input("\n\nEnter the file to be save: "))
     path="Saved files/"+name+".pcap"
     wrpcap(path,pkts)
-    print("\nFile saved under "+path)
+    print("\nFile saved under : "+path)
     time.sleep(3)
     examine(pkts)
 
@@ -197,7 +202,7 @@ def load():
     name=str(input("\n\nEnter file name to load: "))
     path="Saved files/"+name+".pcap"
     pkts=rdpcap(path)
-    print("\nFile "+path+"  loaded")
+    print("\nFile : "+path+"  loaded")
     time.sleep(3)
     examine(pkts)
 
@@ -208,7 +213,7 @@ def exit():
     print("\n\n\t\t\t",end='')
     for x in msg:
         print(x+" ",end='')
-        time.sleep(0.4)
+        time.sleep(0.3)
     print("\n\n\n")
 
 def show_interfaces():
