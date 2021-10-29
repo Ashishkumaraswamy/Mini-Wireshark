@@ -86,14 +86,24 @@ def snip_page(current_filter=None,iface=None):
 
 def print_packets(pkts):
     print("\t\t\tPACKETS\n")
-    print("S.No\t   Source\t\t  Destination\t\t Type\tLength\n")
+    print("S.No\t   Source\t\t  Destination\t\t Type\tLength\tInfo\n")
     s=20
     for i in range(len(pkts)):
         tl=top_layer(pkts[i]).upper()
-        if tl!='ARP':
-            print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]))
+        if pkts[i].haslayer(ARP)==False:
+            if tl=="TCP":
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][TCP].sport,"->",pkts[i][TCP].dport," [FIN,ACK] Seq=",pkts[i][TCP].seq)
+            elif tl=="UDP":
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][UDP].sport,"->",pkts[i][UDP].dport)
+            elif tl=="ICMP":
+                op=pkts[i][ICMP].type
+                if op==8:
+                    opcode="request"
+                else:
+                    opcode="response"
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\tEcho ",opcode," id=",pkts[i][ICMP].id)
         else:
-            print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl,"\t",len(pkts[i]))
+            print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl,"\t",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
 
 def sniff_packets(iface,filter):
     pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
@@ -126,7 +136,7 @@ def examine(pkts):
             print("  >Source:            ",pkts[n-1].src)
             print("  >Type:              ",pkts[n-1].type,"\n")
         if i==2:
-            if pkts[n-1].haslayer(TCP):
+            if pkts[n-1].haslayer(IP):
                 print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
                 print("  >Version:       ",pkts[n-1][IP].version)
                 print("  >IHL:           ",pkts[n-1][IP].ihl)
@@ -144,7 +154,7 @@ def examine(pkts):
                 print("  >Hardware Type:     ",pkts[n-1][ARP].hwtype)
                 print("  >Hardware Size:     ",pkts[n-1][ARP].hwlen)
                 print("  >Protocol Size:     ",pkts[n-1][ARP].plen)
-                print("  >Opcode:            ",opcode," (",pkts[n-1][ARP].id,")")
+                print("  >Opcode:            ",opcode," (",pkts[n-1][ARP].op,")")
                 print("  >Sender MAC Address:",pkts[n-1][ARP].hwsrc)
                 print("  >Sender IP Address: ",pkts[n-1][ARP].psrc)
                 print("  >Target MAC Address:",pkts[n-1][ARP].hwdst)
