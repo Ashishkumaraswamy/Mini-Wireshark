@@ -81,15 +81,19 @@ def snip_page(current_filter=None,iface=None):
     else:
         print("\t\t\nCurrent Filter   :   ",current_filter,"\n")
         pkts=sniff_packets(iface,current_filter)
-        print("\t\t\tPACKETS\n")
-        print("S.No\t\tSource\t\t     Destination\t Type\tLength\n")
-        for i in range(len(pkts)):
-            tl=top_layer(pkts[i]).upper()
-            if tl!='ARP':
-                print(i+1,"\t",pkts[i][IP].src,"\t\t",pkts[i][IP].dst,"\t\t",tl,"\t\t",len(pkts[i]))
-            else:
-                print(i+1,"\t",pkts[i].src,"\t\t",pkts[i].dst,"\t\t",tl,"\t\t",len(pkts[i]))
+        print_packets(pkts)
         options(pkts,iface)
+
+def print_packets(pkts):
+    print("\t\t\tPACKETS\n")
+    print("S.No\t   Source\t\t  Destination\t\t Type\tLength\n")
+    s=20
+    for i in range(len(pkts)):
+        tl=top_layer(pkts[i]).upper()
+        if tl!='ARP':
+            print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]))
+        else:
+            print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl,"\t",len(pkts[i]))
 
 def sniff_packets(iface,filter):
     pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
@@ -108,13 +112,11 @@ def top_layer(packet):
 def examine(pkts):
     display_title()
     print("\n\n")
-    for i in range(len(pkts)):
-        print(i+1,"\t",pkts[i].src,"\t",pkts[i].dst,"\t",len(pkts[i]))
+    print_packets(pkts)
     n=int(input("\n\nEnter the packet number to examine: "))
     system("cls")
     display_title()
     print("\n\n")
-    # print(pkts[n-1].show2())
     for i in range(0,4):
         if i==0:
             print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)" )
@@ -153,7 +155,12 @@ def load():
 def exit():
     display_title()
     print("\n\t\t\t\t\t\tBy: Ashish & Hafiz")
-    print("\n\n\t\t\tGOODBYE...\n\n\n")
+    msg="GOODBYE..."
+    print("\n\n\t\t\t",end='')
+    for x in msg:
+        print(x+" ",end='')
+        time.sleep(0.4)
+    print("\n\n\n")
 
 def show_interfaces():
     print(conf.ifaces)
