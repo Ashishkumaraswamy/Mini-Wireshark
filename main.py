@@ -119,16 +119,55 @@ def examine(pkts):
     print("\n\n")
     for i in range(0,4):
         if i==0:
-            print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)" )
+            print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)\n")
         if i==1:
             print("Ethernet Layer 2, Src:",pkts[n-1].src," Dst:",pkts[n-1].dst)
+            print("  >Destination:       ",pkts[n-1].dst)
+            print("  >Source:            ",pkts[n-1].src)
+            print("  >Type:              ",pkts[n-1].type,"\n")
         if i==2:
-            print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
+            if pkts[n-1].haslayer(TCP):
+                print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
+                print("  >Version:       ",pkts[n-1][IP].version)
+                print("  >IHL:           ",pkts[n-1][IP].ihl)
+                print("  >Total Length:  ",pkts[n-1][IP].len)
+                print("  >Identification:",pkts[n-1][IP].id)
+                print("  >TTL:           ",pkts[n-1][IP].ttl)
+                print("  >protocol:      ",pkts[n-1][IP].proto,"\n")
+            if pkts[n-1].haslayer(ARP):
+                op=pkts[n-1][ARP].op
+                if op==1:
+                    opcode="request"
+                else:
+                    opcode="response"
+                print("Address Resolution Protocol (",opcode,")")
+                print("  >Hardware Type:     ",pkts[n-1][ARP].hwtype)
+                print("  >Hardware Size:     ",pkts[n-1][ARP].hwlen)
+                print("  >Protocol Size:     ",pkts[n-1][ARP].plen)
+                print("  >Opcode:            ",opcode," (",pkts[n-1][ARP].id,")")
+                print("  >Sender MAC Address:",pkts[n-1][ARP].hwsrc)
+                print("  >Sender IP Address: ",pkts[n-1][ARP].psrc)
+                print("  >Target MAC Address:",pkts[n-1][ARP].hwdst)
+                print("  >Target IP Address: ",pkts[n-1][ARP].pdst)
+                break
         if i==3:
             if pkts[n-1].haslayer(TCP):
                 print("Transmission Control Protocol, Src Port:",pkts[n-1][TCP].sport," Dst Port:",pkts[n-1][TCP].dport)
+                print("  >Source Port:      ",pkts[n-1][TCP].sport)
+                print("  >Destination Port: ",pkts[n-1][TCP].dport)
+                print("  >Sequence Number:  ",pkts[n-1][TCP].seq)
+                print("  >Window:           ",pkts[n-1][TCP].window,"\n")
             elif pkts[n-1].haslayer(UDP):
                 print("User Datagram Protocol, Src Port:",pkts[n-1][UDP].sport," Dst Port:",pkts[n-1][UDP].dport)
+                print("  >Source Port:      ",pkts[n-1][UDP].sport)
+                print("  >Destination Port: ",pkts[n-1][UDP].dport)
+                print("  >Length:           ",pkts[n-1][UDP].len)
+                print("  >Checksum:         ",pkts[n-1][UDP].chksum,"\n")
+            elif pkts[n-1].haslayer(ICMP):
+                print("Internet Control Message Protocol")
+                print("  >Type:     ",pkts[n-1][ICMP].type)
+                print("  >Code:     ",pkts[n-1][ICMP].code)
+                print("  >Checksum: ",pkts[n-1][ICMP].seq,"\n")
     print("\n\n")
     print(hexdump(pkts[n-1]))
     print("\n\n")
