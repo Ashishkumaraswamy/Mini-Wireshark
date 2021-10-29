@@ -86,7 +86,7 @@ def snip_page(current_filter=None,iface=None):
 
 def print_packets(pkts):
     print("\t\t\tPACKETS\n")
-    print("S.No\t   Source\t\t  Destination\t\t Type\t   Length\t    Info\n")
+    print("S.No\t   Source\t\t  Destination\t\t Type\t Length\t      Info\n")
     s=20
     for i in range(len(pkts)):
         tl=top_layer(pkts[i]).upper()
@@ -104,6 +104,7 @@ def print_packets(pkts):
                 print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\tEcho ",opcode," id=",pkts[i][ICMP].id)
         else:
             op=pkts[i][ARP].op
+            tl="ARP"
             if op==1:
                 print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
 
