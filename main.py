@@ -68,9 +68,10 @@ def snip_page(current_filter=None,iface=None):
     system("cls")
     display_title()
     if current_filter==None:
+        print("\n\t\t** Enter \'none\' to capture all packets **")
         current_filter=str(input("\nEnter the filter name:  "))
         current_filter=current_filter.lower()
-        if valid_filter(current_filter):
+        if valid_filter(current_filter) or current_filter=="none":
             snip_page(current_filter,iface)
         else:
             system("cls")
@@ -112,7 +113,9 @@ def print_packets(pkts):
                 print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\t",pkts[i][ARP].pdst," is at ",pkts[i][ARP].psrc)
             
 def sniff_packets(iface,filter):
-    pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
+    if filter=="none":
+        filter=None
+    pkts=sniff(iface=iface,count=20,filter=filter,timeout=8)
     if(len(pkts)==0):
         print("\n\n\tNo packets captured !!")
         time.sleep(3)
@@ -126,6 +129,7 @@ def top_layer(packet):
     return layer
     
 def examine(pkts):
+    system("cls")
     display_title()
     print("\n\n")
     print_packets(pkts)
@@ -202,8 +206,14 @@ def load():
     display_title()
     name=str(input("\n\nEnter file name to load: "))
     path="Saved files/"+name+".pcap"
-    pkts=rdpcap(path)
-    print("\nFile : "+path+"  loaded")
+    try:
+        pkts=rdpcap(path)
+        print("\nFile : "+path+"  loaded")
+    except:
+        system("cls")
+        print("\n\n\t****File does not exist!! Enter a proper file name*****")
+        time.sleep(3)
+        welcome_screen()
     time.sleep(3)
     examine(pkts)
 
