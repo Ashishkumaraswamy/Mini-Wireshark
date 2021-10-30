@@ -1,4 +1,3 @@
-from threading import Thread
 from scapy.all import *
 import time
 from os import system
@@ -68,9 +67,10 @@ def snip_page(current_filter=None,iface=None):
     system("cls")
     display_title()
     if current_filter==None:
+        print("\n\t\t** Enter \'none\' to capture all packets **")
         current_filter=str(input("\nEnter the filter name:  "))
         current_filter=current_filter.lower()
-        if valid_filter(current_filter):
+        if valid_filter(current_filter) or current_filter=="none":
             snip_page(current_filter,iface)
         else:
             system("cls")
@@ -81,18 +81,40 @@ def snip_page(current_filter=None,iface=None):
     else:
         print("\t\t\nCurrent Filter   :   ",current_filter,"\n")
         pkts=sniff_packets(iface,current_filter)
-        print("\t\t\tPACKETS\n")
-        print("S.No\t\tSource\t\t     Destination\t Type\tLength\n")
-        for i in range(len(pkts)):
-            tl=top_layer(pkts[i]).upper()
-            if tl!='ARP':
-                print(i+1,"\t",pkts[i][IP].src,"\t\t",pkts[i][IP].dst,"\t\t",tl,"\t\t",len(pkts[i]))
-            else:
-                print(i+1,"\t",pkts[i].src,"\t\t",pkts[i].dst,"\t\t",tl,"\t\t",len(pkts[i]))
+        print_packets(pkts)
         options(pkts,iface)
 
+def print_packets(pkts):
+    print("\t\t\tPACKETS\n")
+    print("S.No\t   Source\t\t  Destination\t\t Type\t Length\t      Info\n")
+    s=20
+    for i in range(len(pkts)):
+        tl=top_layer(pkts[i]).upper()
+        if pkts[i].haslayer(ARP)==False:
+            if tl=="TCP":
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][TCP].sport,"->",pkts[i][TCP].dport," [FIN,ACK] Seq=",pkts[i][TCP].seq)
+            elif tl=="UDP":
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][UDP].sport,"->",pkts[i][UDP].dport)
+            elif tl=="ICMP":
+                op=pkts[i][ICMP].type
+                if op==8:
+                    opcode="request"
+                else:
+                    opcode="response"
+                print(i+1,"\t",pkts[i][IP].src," "*(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "*(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\tEcho ",opcode," id=",pkts[i][ICMP].id)
+        else:
+            op=pkts[i][ARP].op
+            tl="ARP"
+            if op==1:
+                print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
+
+            else:
+                print(i+1,"\t",pkts[i].src," "*(s-len(pkts[i].src)),"\t",pkts[i].dst," "*(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\t",pkts[i][ARP].pdst," is at ",pkts[i][ARP].psrc)
+            
 def sniff_packets(iface,filter):
-    pkts=sniff(iface=iface,count=10,filter=filter,timeout=8)
+    if filter=="none":
+        filter=None
+    pkts=sniff(iface=iface,count=20,filter=filter,timeout=8)
     if(len(pkts)==0):
         print("\n\n\tNo packets captured !!")
         time.sleep(3)
@@ -106,18 +128,71 @@ def top_layer(packet):
     return layer
     
 def examine(pkts):
-    display_title()
-    print("\n\n")
-    for i in range(len(pkts)):
-        print(i+1,"\t",pkts[i].src,"\t",pkts[i].dst,"\t",len(pkts[i]))
-    n=int(input("\n\nEnter the packet number to examine: "))
     system("cls")
     display_title()
     print("\n\n")
-    print(pkts[n-1].show2())
-    # for i in pkts[n-1].layers():
-    #     print(i)
-    #     print(i,", ",pkts[n-1][i].src,", ",pkts[n-1][i].dst)
+    print_packets(pkts)
+    n=int(input("\n\nEnter the packet number to examine: "))
+    if n>len(pkts):
+        print("\n\n\t** Enter a valid packet number !! **\n\n")
+        time.sleep(3)
+        examine(pkts)
+    system("cls")
+    display_title()
+    print("\n\n")
+    for i in range(0,4):
+        if i==0:
+            print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)\n")
+        if i==1:
+            print("Ethernet Layer 2, Src:",pkts[n-1].src," Dst:",pkts[n-1].dst)
+            print("  >Destination:       ",pkts[n-1].dst)
+            print("  >Source:            ",pkts[n-1].src)
+            print("  >Type:              ",pkts[n-1].type,"\n")
+        if i==2:
+            if pkts[n-1].haslayer(IP):
+                print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
+                print("  >Version:       ",pkts[n-1][IP].version)
+                print("  >IHL:           ",pkts[n-1][IP].ihl)
+                print("  >Total Length:  ",pkts[n-1][IP].len)
+                print("  >Identification:",pkts[n-1][IP].id)
+                print("  >TTL:           ",pkts[n-1][IP].ttl)
+                print("  >Protocol:      ",pkts[n-1][IP].proto,"\n")
+            if pkts[n-1].haslayer(ARP):
+                op=pkts[n-1][ARP].op
+                if op==1:
+                    opcode="request"
+                else:
+                    opcode="response"
+                print("Address Resolution Protocol (",opcode,")")
+                print("  >Hardware Type:     ",pkts[n-1][ARP].hwtype)
+                print("  >Hardware Size:     ",pkts[n-1][ARP].hwlen)
+                print("  >Protocol Size:     ",pkts[n-1][ARP].plen)
+                print("  >Opcode:            ",opcode," (",pkts[n-1][ARP].op,")")
+                print("  >Sender MAC Address:",pkts[n-1][ARP].hwsrc)
+                print("  >Sender IP Address: ",pkts[n-1][ARP].psrc)
+                print("  >Target MAC Address:",pkts[n-1][ARP].hwdst)
+                print("  >Target IP Address: ",pkts[n-1][ARP].pdst)
+                break
+        if i==3:
+            if pkts[n-1].haslayer(TCP):
+                print("Transmission Control Protocol, Src Port:",pkts[n-1][TCP].sport," Dst Port:",pkts[n-1][TCP].dport)
+                print("  >Source Port:      ",pkts[n-1][TCP].sport)
+                print("  >Destination Port: ",pkts[n-1][TCP].dport)
+                print("  >Sequence Number:  ",pkts[n-1][TCP].seq)
+                print("  >Window:           ",pkts[n-1][TCP].window,"\n")
+            elif pkts[n-1].haslayer(UDP):
+                print("User Datagram Protocol, Src Port:",pkts[n-1][UDP].sport," Dst Port:",pkts[n-1][UDP].dport)
+                print("  >Source Port:      ",pkts[n-1][UDP].sport)
+                print("  >Destination Port: ",pkts[n-1][UDP].dport)
+                print("  >Length:           ",pkts[n-1][UDP].len)
+                print("  >Checksum:         ",pkts[n-1][UDP].chksum,"\n")
+            elif pkts[n-1].haslayer(ICMP):
+                print("Internet Control Message Protocol")
+                print("  >Type:     ",pkts[n-1][ICMP].type)
+                print("  >Code:     ",pkts[n-1][ICMP].code)
+                print("  >Checksum: ",pkts[n-1][ICMP].seq,"\n")
+    print("\n\n")
+    print(hexdump(pkts[n-1]))
     print("\n\n")
     options(pkts)
 
@@ -126,7 +201,7 @@ def save(pkts):
     name=str(input("\n\nEnter the file to be save: "))
     path="Saved files/"+name+".pcap"
     wrpcap(path,pkts)
-    print("\nFile saved under "+path)
+    print("\nFile saved under : "+path)
     time.sleep(3)
     examine(pkts)
 
@@ -134,15 +209,27 @@ def load():
     display_title()
     name=str(input("\n\nEnter file name to load: "))
     path="Saved files/"+name+".pcap"
-    pkts=rdpcap(path)
-    print("\nFile "+path+"  loaded")
+    try:
+        pkts=rdpcap(path)
+        print("\nFile : "+path+"  loaded")
+    except:
+        system("cls")
+        print("\n\n\t****File does not exist!! Enter a proper file name*****")
+        time.sleep(3)
+        welcome_screen()
     time.sleep(3)
     examine(pkts)
 
 def exit():
     display_title()
     print("\n\t\t\t\t\t\tBy: Ashish & Hafiz")
-    print("\n\n\t\t\tGOODBYE...\n\n\n")
+    msg="GOODBYE..."
+    print("\n\n\t\t\t",end='')
+    for x in msg:
+        print(x+" ",end='')
+        time.sleep(0.3)
+    print("\n\n\n")
+    system("cls")
 
 def show_interfaces():
     print(conf.ifaces)
@@ -157,5 +244,6 @@ def chosen_interface(netindex):
 def main():
     system("cls")
     welcome_screen()
+    system("cls")
 
 main()
