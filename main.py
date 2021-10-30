@@ -1,4 +1,3 @@
-from threading import Thread
 from scapy.all import *
 import time
 from os import system
@@ -134,6 +133,10 @@ def examine(pkts):
     print("\n\n")
     print_packets(pkts)
     n=int(input("\n\nEnter the packet number to examine: "))
+    if n>len(pkts):
+        print("\n\n\t** Enter a valid packet number !! **\n\n")
+        time.sleep(3)
+        examine(pkts)
     system("cls")
     display_title()
     print("\n\n")
@@ -226,6 +229,7 @@ def exit():
         print(x+" ",end='')
         time.sleep(0.3)
     print("\n\n\n")
+    system("cls")
 
 def show_interfaces():
     print(conf.ifaces)
@@ -240,5 +244,6 @@ def chosen_interface(netindex):
 def main():
     system("cls")
     welcome_screen()
+    system("cls")
 
 main()
